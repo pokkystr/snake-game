@@ -19,10 +19,19 @@ export class MultiClient {
     this.state = null;
     this.lastErrorCode = null;
     this._leaving = false;
+    this._open = false;
+    this._closed = false;
+    this._queue = [];
   }
 
   open(url) {
     const socket = this.createSocket(url);
+    socket.onopen = () => {
+      this._open = true;
+      const queued = this._queue;
+      this._queue = [];
+      for (const message of queued) this._rawSend(message);
+    };
     socket.onmessage = (event) => {
       let message;
       try {
@@ -33,6 +42,9 @@ export class MultiClient {
       this._receive(message);
     };
     socket.onclose = (event) => {
+      this._closed = true;
+      this._open = false;
+      this._queue = [];
       if (this._leaving) return;
       const code = (event && event.code) || 1006;
       const reason = FATAL_REASONS[code] ?? this.lastErrorCode ?? 'disconnected';
@@ -65,10 +77,19 @@ export class MultiClient {
     }
   }
 
-  send(object) {
+  _rawSend(object) {
     if (this.socket && typeof this.socket.send === 'function') {
       this.socket.send(JSON.stringify(object));
     }
+  }
+
+  send(object) {
+    if (this._closed) return;
+    if (!this._open) {
+      this._queue.push(object);
+      return;
+    }
+    this._rawSend(object);
   }
 
   join(name) {
@@ -94,8 +115,10 @@ export class MultiClient {
   leave() {
     if (!this.socket) return;
     this._leaving = true;
-    this.send({ type: 'leave' });
+    this._queue = [];
+    if (this._open) this._rawSend({ type: 'leave' });
     if (typeof this.socket.close === 'function') this.socket.close();
     this.socket = null;
+    this._closed = true;
   }
 }

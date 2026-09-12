@@ -44,6 +44,23 @@ class FakeSocket {
   }
 }
 
+class ConnectingSocket extends FakeSocket {
+  constructor() {
+    super();
+    this.readyState = 0;
+  }
+  send(text) {
+    if (this.readyState !== 1) {
+      throw new Error('InvalidStateError: WebSocket is already in CLOSING or CLOSED state (simulates CONNECTING)');
+    }
+    super.send(text);
+  }
+  open() {
+    this.readyState = 1;
+    if (this.onopen) this.onopen();
+  }
+}
+
 test('keyboard map covers arrows and WASD and ignores other keys', () => {
   assert.deepEqual(KEY_TO_DIRECTION, {
     ArrowUp: 'north',
@@ -240,6 +257,47 @@ test('multiplayer client detects host transfers from state messages', () => {
   assert.equal(client.isHost(), false);
   socket.receive({ type: 'state', phase: 'lobby', hostId: 'p2', players: [], game: null, result: null });
   assert.equal(client.isHost(), true);
+});
+
+test('LAN join blocker: intents on a CONNECTING socket queue and send exactly once on open', () => {
+  const socket = new ConnectingSocket();
+  const events = [];
+  const client = new MultiClient({
+    createSocket: () => socket,
+    onWelcome: (m) => events.push(['welcome', m]),
+    onState: (s) => events.push(['state', s]),
+    onError: (e) => events.push(['error', e]),
+    onFatal: (f) => events.push(['fatal', f]),
+  });
+  client.open('ws://host/ws');
+  client.join('Ana');
+  client.turn('north');
+  assert.deepEqual(socket.sent, [], 'nothing is sent while CONNECTING');
+  socket.open();
+  assert.deepEqual(socket.sent, [
+    { type: 'join', name: 'Ana' },
+    { type: 'direction', dir: 'north' },
+  ]);
+  assert.equal(socket.sent.filter((m) => m.type === 'join').length, 1);
+  client.turn('east');
+  assert.deepEqual(socket.sent.at(-1), { type: 'direction', dir: 'east' });
+});
+
+test('close while still connecting surfaces a disconnect fatal and stops sending', () => {
+  const socket = new ConnectingSocket();
+  const events = [];
+  const client = new MultiClient({
+    createSocket: () => socket,
+    onFatal: (f) => events.push(['fatal', f]),
+  });
+  client.open('ws://host/ws');
+  client.join('Ana');
+  socket.close(1006);
+  const fatal = events.find((e) => e[0] === 'fatal');
+  assert.ok(fatal, 'onFatal invoked');
+  assert.equal(fatal[1].reason, 'disconnected');
+  client.turn('north');
+  assert.deepEqual(socket.sent, [], 'no sends after the socket closed');
 });
 
 test('public client files are served by the HTTP layer', async () => {
