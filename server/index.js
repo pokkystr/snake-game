@@ -96,10 +96,21 @@ export function startServer({ port = 0, host = '0.0.0.0', options = {} } = {}) {
   };
   const httpServer = http.createServer(createHandler());
   const wss = new WebSocketServer({ server: httpServer, path: '/ws', maxPayload: 2048 });
+  wss.on('error', (error) => {
+    process.stderr.write(`websocket server error: ${error.message}\n`);
+  });
 
   wss.on('connection', (ws) => {
     const connId = crypto.randomUUID();
     connections.set(connId, ws);
+    // Per-socket errors (e.g. maxPayload exceeded, WS_ERR_UNSUPPORTED_MESSAGE_
+    // LENGTH after an oversized frame) crash the process when unhandled. ws
+    // itself terminates the offending connection with close code 1009; we only
+    // need to clean up our bookkeeping and keep serving everyone else.
+    ws.on('error', () => {
+      connections.delete(connId);
+      lobby.leave(connId);
+    });
     const send = (message) => {
       if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(message));
     };
