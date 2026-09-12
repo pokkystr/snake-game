@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Snake Arena</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Snake Arena</h1>
+
+      <section id="screen-select" aria-labelledby="select-title">
+        <h2 id="select-title">Choose a mode</h2>
+        <div class="menu">
+          <button id="btn-solo" class="mode">
+            Single player
+            <span class="hint">Play locally against the wall</span>
+          </button>
+          <button id="btn-multi" class="mode">
+            LAN multiplayer
+            <span class="hint">2-4 players on the same network</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="screen-solo" aria-labelledby="solo-title" hidden>
+        <h2 id="solo-title">Single player</h2>
+        <p class="status" id="solo-status" role="status">Arrow keys / WASD or the on-screen pad to steer.</p>
+        <p class="score">Score: <span id="solo-score-value">0</span></p>
+        <canvas id="solo-canvas" width="480" height="320" role="img" aria-label="Snake game board"></canvas>
+        <div class="dpad" role="group" aria-label="Direction controls">
+          <button data-dir="north" class="north" aria-label="Move up">Up</button>
+          <button data-dir="west" class="west" aria-label="Move left">Left</button>
+          <button data-dir="south" class="south" aria-label="Move down">Down</button>
+          <button data-dir="east" class="east" aria-label="Move right">Right</button>
+        </div>
+        <div class="row">
+          <button id="solo-restart">Restart</button>
+          <button id="solo-back">Back to menu</button>
+        </div>
+      </section>
+
+      <section id="screen-multi" aria-labelledby="multi-title" hidden>
+        <h2 id="multi-title">LAN multiplayer</h2>
+        <p class="lan">
+          Open on any device on this network:
+          <code id="lan-url-text">loading…</code>
+        </p>
+        <form id="join-form">
+          <label for="player-name">Your name</label>
+          <input id="player-name" name="player-name" maxlength="20" autocomplete="off" placeholder="Player" />
+          <button type="submit">Join lobby</button>
+        </form>
+        <p class="status" id="multi-status" role="status"></p>
+        <ul id="lobby-list" aria-label="Players in the lobby"></ul>
+        <button id="btn-start" hidden>Start match</button>
+        <p id="countdown" role="timer" hidden></p>
+        <canvas id="multi-canvas" width="480" height="320" role="img" aria-label="Multiplayer snake board" hidden></canvas>
+        <p class="score" id="multi-scores"></p>
+        <div class="dpad" role="group" aria-label="Direction controls">
+          <button data-dir="north" class="north" aria-label="Move up">Up</button>
+          <button data-dir="west" class="west" aria-label="Move left">Left</button>
+          <button data-dir="south" class="south" aria-label="Move down">Down</button>
+          <button data-dir="east" class="east" aria-label="Move right">Right</button>
+        </div>
+        <div class="row">
+          <button id="multi-back">Leave</button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,196 @@
+:root {
+  color-scheme: dark;
+  --bg: #020617;
+  --panel: #0b1120;
+  --text: #e2e8f0;
+  --accent: #22d3ee;
+  --danger: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2rem;
+}
+
+h1 {
+  font-size: 1.4rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h2 {
+  font-size: 1.05rem;
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid #1e293b;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:hover,
+button:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.menu {
+  display: grid;
+  gap: 0.75rem;
+}
+
+button.mode {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1.1rem;
+  font-size: 1.05rem;
+  text-align: left;
+}
+
+button.mode .hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.status {
+  min-height: 1.2em;
+  color: #94a3b8;
+}
+
+.score {
+  font-weight: 700;
+}
+
+canvas {
+  width: 100%;
+  height: auto;
+  background: var(--panel);
+  border: 2px solid #1e293b;
+  border-radius: 10px;
+  display: block;
+}
+
+.lan code {
+  display: inline-block;
+  word-break: break-all;
+  background: var(--panel);
+  border-radius: 6px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.8rem;
+}
+
+#join-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#join-form input {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid #1e293b;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  flex: 1 1 10rem;
+}
+
+#lobby-list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+#lobby-list li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+}
+
+.badge {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  background: #164e63;
+  color: var(--accent);
+}
+
+.badge.eliminated {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+#countdown {
+  font-size: 1.6rem;
+  text-align: center;
+  color: var(--accent);
+}
+
+#btn-start {
+  width: 100%;
+  border-color: var(--accent);
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    ". up ."
+    "left down right";
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.dpad button {
+  min-height: 56px;
+  font-size: 1rem;
+}
+
+.dpad .north { grid-area: up; }
+.dpad .west { grid-area: left; }
+.dpad .south { grid-area: down; }
+.dpad .east { grid-area: right; }
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  main { padding: 0.5rem 0.5rem 2rem; }
+  canvas { border-radius: 6px; }
+}

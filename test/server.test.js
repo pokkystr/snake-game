@@ -46,3 +46,16 @@ test('only whitelisted static paths are served; traversal and unknown paths 404'
     assert.equal((await get(`${url}/nope.html`)).status, 404);
   });
 });
+
+test('the app shell and client modules are served to browsers', async () => {
+  await withServer(async (url) => {
+    const home = await get(`${url}/`);
+    assert.equal(home.status, 200);
+    assert.match(home.type, /text\/html/);
+    assert.match(home.body, /id="screen-select"/);
+    for (const file of ['app.js', 'single.js', 'multi.js', 'render.js', 'styles.css']) {
+      const response = await get(`${url}/${file}`);
+      assert.equal(response.status, 200, `${file} served`);
+    }
+  });
+});
