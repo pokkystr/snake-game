@@ -132,6 +132,42 @@ test('countdown ends and the match plays with server ticks', () => {
   assert.equal(latest('c1').game.tick, 2);
 });
 
+test('LAN food level-up changes the server tick deadline and broadcasts Lv', () => {
+  const { lobby, latest } = harness({ tickMs: 150, width: 20, height: 15 });
+  lobby.join('c1', 'Ana', 0);
+  lobby.join('c2', 'Bo', 0);
+  lobby.requestStart('p-c1', 0);
+  lobby.advance(3000);
+  assert.equal(latest('c1').game.level, 1);
+  assert.equal(latest('c1').game.tickMs, 150);
+  lobby.game.snakes[0].score = 2;
+  const head = lobby.game.snakes[0].segments[0];
+  lobby.game.food = { x: head.x + 1, y: head.y };
+  lobby.advance(3150);
+  assert.equal(latest('c1').game.level, 2);
+  assert.equal(latest('c2').game.level, 2);
+  assert.equal(latest('c1').game.tickMs, 140);
+  assert.equal(lobby.nextTickAt, 3290);
+  lobby.advance(3289);
+  assert.equal(latest('c1').game.tick, 1);
+  lobby.advance(3290);
+  assert.equal(latest('c1').game.tick, 2);
+});
+
+test('LAN catches up each due tick after an interval change', () => {
+  const { lobby, latest } = harness({ tickMs: 150, width: 20, height: 15 });
+  lobby.join('c1', 'Ana', 0);
+  lobby.join('c2', 'Bo', 0);
+  lobby.requestStart('p-c1', 0);
+  lobby.advance(3000);
+  lobby.game.snakes[0].score = 2;
+  const head = lobby.game.snakes[0].segments[0];
+  lobby.game.food = { x: head.x + 1, y: head.y };
+  lobby.advance(3570);
+  assert.equal(latest('c1').game.tick, 4);
+  assert.equal(lobby.nextTickAt, 3710);
+});
+
 test('direction intents steer the snake; one change per tick; reversals rejected', () => {
   const { lobby, latest, errors } = harness();
   lobby.join('c1', 'Ana', 1000);

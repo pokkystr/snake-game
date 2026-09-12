@@ -27,13 +27,21 @@
       <section id="screen-solo" aria-labelledby="solo-title" hidden>
         <h2 id="solo-title">Single player</h2>
         <p class="status" id="solo-status" role="status">Arrow keys / WASD or the on-screen pad to steer.</p>
-        <p class="score">Score: <span id="solo-score-value">0</span></p>
-        <canvas id="solo-canvas" width="480" height="320" role="img" aria-label="Snake game board"></canvas>
+        <div class="hud" aria-label="Single-player game stats">
+          <p class="hud-score">Score <strong id="solo-score-value">0</strong></p>
+          <p class="hud-level" id="solo-level">Lv <strong id="solo-level-value">1</strong></p>
+          <p class="hud-speed">Speed <strong id="solo-speed-value">150 ms</strong></p>
+        </div>
+        <div class="board-shell" id="solo-board">
+          <canvas id="solo-canvas" width="480" height="320" role="img" aria-label="Snake game board"></canvas>
+          <p id="solo-countdown" class="countdown-overlay" role="timer" hidden><span>Get ready</span><strong id="solo-countdown-value">3</strong></p>
+        </div>
         <div class="dpad" role="group" aria-label="Direction controls">
-          <button data-dir="north" class="north" aria-label="Move up">Up</button>
-          <button data-dir="west" class="west" aria-label="Move left">Left</button>
-          <button data-dir="south" class="south" aria-label="Move down">Down</button>
-          <button data-dir="east" class="east" aria-label="Move right">Right</button>
+          <button data-dir="north" class="north" aria-label="Move up">▲</button>
+          <button data-dir="west" class="west" aria-label="Move left">◀</button>
+          <span class="dpad-center" aria-hidden="true"></span>
+          <button data-dir="east" class="east" aria-label="Move right">▶</button>
+          <button data-dir="south" class="south" aria-label="Move down">▼</button>
         </div>
         <div class="row">
           <button id="solo-restart">Restart</button>
@@ -55,14 +63,21 @@
         <p class="status" id="multi-status" role="status"></p>
         <ul id="lobby-list" aria-label="Players in the lobby"></ul>
         <button id="btn-start" hidden>Start match</button>
-        <p id="countdown" role="timer" hidden></p>
-        <canvas id="multi-canvas" width="480" height="320" role="img" aria-label="Multiplayer snake board" hidden></canvas>
+        <div class="hud" aria-label="Multiplayer game stats">
+          <p class="hud-level" id="multi-level">Lv <strong id="multi-level-value">1</strong></p>
+          <p class="hud-speed">Speed <strong id="multi-speed-value">150 ms</strong></p>
+        </div>
+        <div class="board-shell" id="multi-board" hidden>
+          <canvas id="multi-canvas" width="480" height="320" role="img" aria-label="Multiplayer snake board" hidden></canvas>
+          <p id="countdown" class="countdown-overlay" role="timer" hidden><span>Get ready</span><strong id="multi-countdown-value">3</strong></p>
+        </div>
         <p class="score" id="multi-scores"></p>
         <div class="dpad" role="group" aria-label="Direction controls">
-          <button data-dir="north" class="north" aria-label="Move up">Up</button>
-          <button data-dir="west" class="west" aria-label="Move left">Left</button>
-          <button data-dir="south" class="south" aria-label="Move down">Down</button>
-          <button data-dir="east" class="east" aria-label="Move right">Right</button>
+          <button data-dir="north" class="north" aria-label="Move up">▲</button>
+          <button data-dir="west" class="west" aria-label="Move left">◀</button>
+          <span class="dpad-center" aria-hidden="true"></span>
+          <button data-dir="east" class="east" aria-label="Move right">▶</button>
+          <button data-dir="south" class="south" aria-label="Move down">▼</button>
         </div>
         <div class="row">
           <button id="multi-back">Leave</button>

@@ -163,7 +163,10 @@ export function startServer({ port = 0, host = '0.0.0.0', options = {} } = {}) {
     });
   });
 
-  const timer = setInterval(() => lobby.advance(Date.now()), Math.max(10, Math.floor(lobby.tickMs / 2)));
+  const timer = setInterval(
+    () => lobby.advance(Date.now()),
+    Math.max(10, Math.floor(Math.min(lobby.tickMs, 70) / 2))
+  );
 
   return new Promise((resolve, reject) => {
     httpServer.on('error', reject);

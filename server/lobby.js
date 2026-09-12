@@ -29,6 +29,8 @@ function serializeGame(game) {
     height: game.height,
     phase: game.phase,
     tick: game.tick,
+    level: game.level,
+    tickMs: game.tickMs,
     food: game.food ? { ...game.food } : null,
     result: game.result ? { winnerIds: [...game.result.winnerIds], draw: game.result.draw } : null,
     snakes: game.snakes.map((snake) => ({
@@ -45,7 +47,7 @@ function serializeGame(game) {
 export class Lobby {
   constructor(options = {}) {
     this.countdownMs = Number.isFinite(options.countdownMs) ? options.countdownMs : 3000;
-    this.tickMs = Number.isFinite(options.tickMs) ? options.tickMs : 150;
+    this.tickMs = Number.isFinite(options.tickMs) && options.tickMs > 0 ? options.tickMs : 150;
     this.rng = typeof options.rng === 'function' ? options.rng : Math.random;
     this.onMessage = typeof options.onMessage === 'function' ? options.onMessage : () => {};
     this.width = options.width;
@@ -227,13 +229,14 @@ export class Lobby {
     const config = {
       players: this.order.map((id) => ({ id, name: this.players.get(id).name })),
       rng: this.rng,
+      tickMs: this.tickMs,
     };
     if (this.width) config.width = this.width;
     if (this.height) config.height = this.height;
     this.game = createGame(config);
     this.phase = 'playing';
     this.countdownEndsAt = null;
-    this.nextTickAt = this.clock + this.tickMs;
+    this.nextTickAt = this.clock + this.game.tickMs;
     this.dirThisTick.clear();
     this.broadcastState();
   }
@@ -243,7 +246,7 @@ export class Lobby {
     this.pendingDirs.clear();
     this.dirThisTick.clear();
     this.game = tick(this.game, intents, this.rng);
-    this.nextTickAt += this.tickMs;
+    this.nextTickAt += this.game.tickMs;
     if (this.game.phase === 'over') {
       this.phase = 'result';
     }

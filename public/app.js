@@ -46,25 +46,68 @@ function init() {
     element.textContent = text;
   }
 
+  function pulse(element) {
+    element.classList.remove('pulse');
+    void element.offsetWidth;
+    element.classList.add('pulse');
+  }
+
+  function showCountdown(overlay, value, digit) {
+    if (overlay.hidden) {
+      overlay.hidden = false;
+      value.textContent = '';
+    }
+    if (value.textContent !== String(digit)) {
+      value.textContent = String(digit);
+      pulse(value);
+    }
+  }
+
+  function celebrateLevel(board, label) {
+    pulse(board);
+    pulse(label);
+    setTimeout(() => {
+      board.classList.remove('pulse');
+      label.classList.remove('pulse');
+    }, 850);
+  }
+
   // --- single player ------------------------------------------------------
 
   const soloCanvas = $id('solo-canvas');
   const soloCtx = soloCanvas.getContext('2d');
   let solo = null;
+  let lastSoloLevel = 1;
 
   function renderSolo(state) {
     renderGame(soloCtx, state, { cell: soloCanvas.width / state.width });
     setStatus($id('solo-score-value'), String(state.snakes[0].score));
+    setStatus($id('solo-level-value'), String(state.level));
+    setStatus($id('solo-speed-value'), `${state.tickMs} ms`);
+    if (state.level > lastSoloLevel) celebrateLevel($id('solo-board'), $id('solo-level'));
+    lastSoloLevel = state.level;
+    if (state.phase === 'countdown') {
+      showCountdown(
+        $id('solo-countdown'),
+        $id('solo-countdown-value'),
+        Math.max(1, Math.ceil(state.countdownRemainingMs / 1000))
+      );
+    } else {
+      $id('solo-countdown').hidden = true;
+    }
     setStatus(
       $id('solo-status'),
-      state.phase === 'playing'
-        ? 'Arrow keys / WASD or the on-screen pad to steer.'
-        : 'Game over. Press Restart to play again.'
+      state.phase === 'countdown'
+        ? 'Get ready — the snake moves after the countdown.'
+        : state.phase === 'playing'
+          ? 'Arrow keys / WASD or the on-screen pad to steer.'
+          : 'Game over. Press Restart to play again.'
     );
   }
 
   function startSolo() {
     if (solo) solo.stop();
+    lastSoloLevel = 1;
     solo = new SoloController({ onState: renderSolo });
     solo.start();
     show('solo');
@@ -77,6 +120,7 @@ function init() {
   let client = null;
   let countdownTimer = null;
   let countdownDeadline = null;
+  let lastMultiLevel = 1;
 
   function stopCountdown() {
     if (countdownTimer !== null) {
@@ -88,11 +132,19 @@ function init() {
 
   function beginCountdown(remainingMs) {
     countdownDeadline = Date.now() + remainingMs;
-    $id('countdown').hidden = false;
+    $id('multi-board').hidden = false;
+    multiCanvas.hidden = true;
     const paint = () => {
       const left = Math.max(0, countdownDeadline - Date.now());
-      setStatus($id('countdown'), `Match starts in ${Math.ceil(left / 1000)}`);
-      if (left <= 0) stopCountdown();
+      showCountdown(
+        $id('countdown'),
+        $id('multi-countdown-value'),
+        left > 0 ? Math.ceil(left / 1000) : 'GO'
+      );
+      if (left <= 0 && countdownTimer !== null) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
     };
     paint();
     if (countdownTimer !== null) clearInterval(countdownTimer);
@@ -141,13 +193,24 @@ function init() {
   function renderMulti(state) {
     renderLobby(state);
     if (state.phase === 'countdown' && state.countdownRemainingMs !== undefined) {
+      lastMultiLevel = 1;
+      setStatus($id('multi-level-value'), '1');
+      setStatus($id('multi-speed-value'), '150 ms');
+      setStatus($id('multi-status'), 'Get ready — the match starts after the countdown.');
+      setStatus($id('multi-scores'), '');
       beginCountdown(state.countdownRemainingMs);
     } else {
       stopCountdown();
     }
     if (state.game) {
+      $id('multi-board').hidden = false;
       multiCanvas.hidden = false;
       renderGame(multiCtx, state.game, { cell: multiCanvas.width / state.game.width });
+      const level = state.game.level ?? 1;
+      setStatus($id('multi-level-value'), String(level));
+      setStatus($id('multi-speed-value'), `${state.game.tickMs ?? 150} ms`);
+      if (level > lastMultiLevel) celebrateLevel($id('multi-board'), $id('multi-level'));
+      lastMultiLevel = level;
       const you = state.game.snakes.find((s) => s.id === client.playerId);
       const parts = state.game.snakes.map(
         (s) => `${s.name}: ${s.score}${s.alive ? '' : ' (out)'}`
@@ -161,11 +224,15 @@ function init() {
         setStatus($id('multi-status'), renderResultText(state));
       }
     } else if (state.phase === 'lobby') {
+      lastMultiLevel = 1;
+      $id('multi-board').hidden = true;
       multiCanvas.hidden = true;
       setStatus(
         $id('multi-status'),
         client && client.isHost()
-          ? 'Waiting for players. At least two are needed to start.'
+          ? state.players.length >= 2
+            ? 'Ready — press Start match.'
+            : 'Waiting for players. At least two are needed to start.'
           : 'Waiting for the host to start the match.'
       );
     } else if (state.phase === 'countdown') {
@@ -193,6 +260,7 @@ function init() {
         stopCountdown();
         setStatus($id('multi-status'), FATAL_TEXT[reason] ?? FATAL_TEXT.disconnected);
         $id('multi-canvas').hidden = true;
+        $id('multi-board').hidden = true;
         client = null;
         $id('join-form').hidden = false;
       },
@@ -252,6 +320,7 @@ function init() {
   });
   $id('solo-restart').addEventListener('click', (event) => {
     event.currentTarget.blur();
+    lastSoloLevel = 1;
     solo.restart();
   });
   $id('solo-back').addEventListener('click', (event) => {
@@ -261,6 +330,7 @@ function init() {
   });
   $id('multi-back').addEventListener('click', (event) => {
     event.currentTarget.blur();
+    stopCountdown();
     if (client) client.leave();
     client = null;
     show('select');

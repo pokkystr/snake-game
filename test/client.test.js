@@ -97,6 +97,7 @@ test('solo play: steer, score, die, and restart without any WebSocket', async ()
     const timer = new FakeTimer();
     const seen = [];
     const solo = new SoloController({
+      countdownMs: 0,
       createTimer: (fn) => timer.create(fn),
       clearTimer: () => {},
       onState: (state) => seen.push(state),
@@ -132,6 +133,7 @@ test('solo play: steer, score, die, and restart without any WebSocket', async ()
 test('solo turn is validated against the current server-independent rules state', () => {
   const timer = new FakeTimer();
   const solo = new SoloController({
+    countdownMs: 0,
     createTimer: (fn) => timer.create(fn),
     clearTimer: () => {},
     gameConfig: { width: 20, height: 15, rng: () => 0.99 },

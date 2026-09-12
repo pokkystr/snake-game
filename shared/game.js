@@ -4,7 +4,8 @@
 // State shape (single source of truth for both callers):
 // {
 //   width, height,                 // board cells
-//   phase: 'playing' | 'over',
+//   level, tickMs, baseTickMs,     // shared speed progression
+//   phase: 'countdown' | 'playing' | 'over', // countdown is added by the solo controller
 //   tick: number,                  // completed ticks
 //   food: { x, y } | null,
 //   result: null | { winnerIds: string[], draw: boolean },
@@ -28,6 +29,10 @@ export const SNAKE_LENGTH = 3;
 export const DEFAULT_BOARD = Object.freeze({ width: 24, height: 16 });
 export const MIN_BOARD = 12;
 export const MAX_PLAYERS = 4;
+export const DEFAULT_TICK_MS = 150;
+export const MIN_TICK_MS = 70;
+export const FOOD_PER_LEVEL = 3;
+export const MAX_LEVEL = 9;
 
 const OPPOSITE = { north: 'south', south: 'north', east: 'west', west: 'east' };
 const key = (cell) => `${cell.x},${cell.y}`;
@@ -38,6 +43,17 @@ export function isDirection(value) {
 
 export function validTurn(from, to) {
   return isDirection(from) && isDirection(to) && to !== OPPOSITE[from];
+}
+
+export function speedForFood(foodCount, baseTickMs = DEFAULT_TICK_MS) {
+  const base = Number.isFinite(baseTickMs) && baseTickMs > 0
+    ? Math.round(baseTickMs)
+    : DEFAULT_TICK_MS;
+  const floor = Math.min(base, MIN_TICK_MS);
+  const earned = Math.floor(Math.max(0, foodCount) / FOOD_PER_LEVEL);
+  const available = Math.ceil((base - floor) / 10);
+  const steps = Math.min(earned, available, MAX_LEVEL - 1);
+  return { level: steps + 1, tickMs: Math.max(floor, base - steps * 10) };
 }
 
 // [0] is the solo spawn; [1..4] are the four corner spawns for multiplayer,
@@ -97,6 +113,9 @@ export function createGame(config = {}) {
   const food = config.food
     ? { x: config.food.x, y: config.food.y }
     : placeFood(snakes, width, height, rng);
+  const baseTickMs = Number.isFinite(config.tickMs) && config.tickMs > 0
+    ? Math.round(config.tickMs)
+    : DEFAULT_TICK_MS;
   return {
     width,
     height,
@@ -104,6 +123,8 @@ export function createGame(config = {}) {
     tick: 0,
     food,
     result: null,
+    baseTickMs,
+    ...speedForFood(0, baseTickMs),
     snakes,
   };
 }
@@ -209,6 +230,10 @@ export function tick(state, intents = {}, rng = Math.random) {
     phase: over ? 'over' : 'playing',
     result,
     food: nextFood,
+    ...speedForFood(
+      snakes.reduce((total, snake) => total + snake.score, 0),
+      state.baseTickMs
+    ),
     snakes,
   };
 }

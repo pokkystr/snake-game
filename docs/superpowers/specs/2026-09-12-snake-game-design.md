@@ -27,3 +27,20 @@ Desktop supports arrow keys and WASD. Mobile uses large on-screen direction butt
 ## Verification
 
 Node's built-in test runner covers pure movement, scoring, reversal, growth/tail behavior, simultaneous collisions, lobby capacity/host transfer/start idempotence, and protocol validation. A browser flow check covers mode choice, local play/restart, and a 2-player lobby. Manual LAN access is checked where a second device is available; otherwise document the limitation. The reviewer and tester examine the same recorded commit, and only the accepted revision is integrated.
+
+## 2026-09-13 approved feature addition
+
+Both single-player start and restart show a visible 3-2-1 countdown and do not
+move the snake before it ends. LAN keeps its server-authoritative three-second
+countdown and receives the same prominent visual treatment. Both modes show
+the current Lv. Every three foods eaten in a match increase speed and Lv: the
+default movement interval starts at 150 ms, falls by 10 ms per level, and stops
+at 70 ms/Lv 9. Single-player counts its own food; LAN uses the sum of all
+players' scores, with the server controlling and broadcasting the interval.
+Restart and rematch reset progression. Non-default test/server intervals remain
+valid and never gain a level without a real speed increase.
+
+Refresh the arcade effects for food, snake heads, countdown, and level changes.
+Honor reduced-motion preference. Center the on-screen direction controls below
+the board as a touch-friendly, Game Boy-style cross-shaped D-pad on desktop and
+mobile, retaining accessible button labels.
