@@ -7,7 +7,7 @@
 //   level, tickMs, baseTickMs,     // shared speed progression
 //   phase: 'countdown' | 'playing' | 'over', // countdown is added by the solo controller
 //   tick: number,                  // completed ticks
-//   food: { x, y } | null,
+//   food: { x, y, type: 'normal'|'triple'|'shrink' } | null,
 //   result: null | { winnerIds: string[], draw: boolean },
 //   snakes: [{
 //     id, name,
@@ -36,6 +36,11 @@ export const MAX_LEVEL = 9;
 
 const OPPOSITE = { north: 'south', south: 'north', east: 'west', west: 'east' };
 const key = (cell) => `${cell.x},${cell.y}`;
+const FOOD_TYPES = new Set(['normal', 'triple', 'shrink']);
+
+function foodType(value) {
+  return FOOD_TYPES.has(value) ? value : 'normal';
+}
 
 export function isDirection(value) {
   return Object.prototype.hasOwnProperty.call(DIRECTIONS, value);
@@ -93,25 +98,27 @@ export function placeFood(snakes, width, height, rng) {
   }
   if (free.length === 0) return null;
   const index = Math.min(free.length - 1, Math.floor(rng() * free.length));
-  return free[index];
+  const chance = rng();
+  const type = chance < 0.8 ? 'normal' : chance < 0.9 ? 'triple' : 'shrink';
+  return { ...free[index], type };
 }
 
 export function createGame(config = {}) {
-  const width = Number.isInteger(config.width) ? config.width : DEFAULT_BOARD.width;
-  const height = Number.isInteger(config.height) ? config.height : DEFAULT_BOARD.height;
-  if (width < MIN_BOARD || height < MIN_BOARD) {
-    throw new Error(`board must be at least ${MIN_BOARD}x${MIN_BOARD}`);
-  }
   const players = Array.isArray(config.players) ? config.players : [];
   if (players.length === 0) throw new Error('at least one player is required');
   if (players.length > MAX_PLAYERS) throw new Error(`at most ${MAX_PLAYERS} players are allowed`);
+  const width = Number.isInteger(config.width) ? config.width : DEFAULT_BOARD.width * players.length;
+  const height = Number.isInteger(config.height) ? config.height : DEFAULT_BOARD.height * players.length;
+  if (width < MIN_BOARD || height < MIN_BOARD) {
+    throw new Error(`board must be at least ${MIN_BOARD}x${MIN_BOARD}`);
+  }
   const rng = typeof config.rng === 'function' ? config.rng : Math.random;
   const plan = spawnPlan(width, height);
   const snakes = players.map((player, index) =>
     buildSnake(String(player.id), String(player.name ?? ''), plan[players.length === 1 ? 0 : index + 1])
   );
   const food = config.food
-    ? { x: config.food.x, y: config.food.y }
+    ? { x: config.food.x, y: config.food.y, type: foodType(config.food.type) }
     : placeFood(snakes, width, height, rng);
   const baseTickMs = Number.isFinite(config.tickMs) && config.tickMs > 0
     ? Math.round(config.tickMs)
@@ -188,16 +195,31 @@ export function tick(state, intents = {}, rng = Math.random) {
     }
   }
 
-  const occupied = new Set();
-  for (const snake of snakes) {
-    const keepsTail = !snake.alive || doomed.has(snake.id) || eatsFood.has(snake.id);
-    const limit = keepsTail ? snake.segments.length : snake.segments.length - 1;
-    for (let i = 0; i < limit; i += 1) occupied.add(key(snake.segments[i]));
-  }
-  for (const snake of moving) {
-    if (doomed.has(snake.id)) continue;
-    if (occupied.has(key(newHeads.get(snake.id)))) doomed.add(snake.id);
-  }
+  const eatenType = foodType(state.food?.type);
+  // Body collisions use the cells that will remain occupied after this move.
+  // A shrinking snake vacates two tail cells (one at the minimum length).
+  // Recompute if a mover dies: its old body then remains an obstacle.
+  let changed;
+  do {
+    changed = false;
+    const occupied = new Set();
+    for (const snake of snakes) {
+      let limit = snake.segments.length;
+      if (snake.alive && !doomed.has(snake.id)) {
+        limit = eatsFood.has(snake.id)
+          ? eatenType === 'shrink' ? Math.max(1, limit - 2) : limit
+          : limit - 1;
+      }
+      for (let i = 0; i < limit; i += 1) occupied.add(key(snake.segments[i]));
+    }
+    for (const snake of moving) {
+      if (doomed.has(snake.id)) continue;
+      if (occupied.has(key(newHeads.get(snake.id)))) {
+        doomed.add(snake.id);
+        changed = true;
+      }
+    }
+  } while (changed);
 
   let nextFood = state.food ? { ...state.food } : null;
   for (const snake of snakes) {
@@ -207,9 +229,11 @@ export function tick(state, intents = {}, rng = Math.random) {
     }
     if (!snake.alive) continue;
     const head = newHeads.get(snake.id);
+    const oldLength = snake.segments.length;
     snake.segments.unshift({ x: head.x, y: head.y });
     if (eatsFood.has(snake.id)) {
-      snake.score += 1;
+      snake.score += eatenType === 'triple' ? 3 : 1;
+      if (eatenType === 'shrink') snake.segments.length = Math.max(2, oldLength - 1);
       nextFood = null;
     } else {
       snake.segments.pop();

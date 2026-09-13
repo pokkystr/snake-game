@@ -9,6 +9,12 @@ export function nextScreen(current, action) {
   return current;
 }
 
+export function canvasBackingSize(width, height, displayWidth, devicePixelRatio = 1) {
+  const ratio = Math.min(2, Math.max(1, devicePixelRatio || 1));
+  const pixelWidth = Math.max(1, Math.round(displayWidth * ratio));
+  return { width: pixelWidth, height: Math.round(pixelWidth * height / width) };
+}
+
 const ERROR_TEXT = {
   not_host: 'Only the host can start the match.',
   not_enough_players: 'At least two players are needed to start.',
@@ -33,6 +39,7 @@ const $id = (id) => document.getElementById(id);
 
 function init() {
   const screens = { select: $id('screen-select'), solo: $id('screen-solo'), multi: $id('screen-multi') };
+  const main = document.querySelector('main');
   let screen = 'select';
 
   function show(name) {
@@ -40,6 +47,21 @@ function init() {
     for (const [key, element] of Object.entries(screens)) {
       element.hidden = key !== name;
     }
+    if (name === 'select') main.style.maxWidth = '720px';
+  }
+
+  function setArenaWidth(board, columns) {
+    const naturalWidth = columns * 20;
+    board.style.maxWidth = `${naturalWidth}px`;
+    main.style.maxWidth = `${Math.max(720, naturalWidth + 48)}px`;
+  }
+
+  function drawBoard(canvas, ctx, board, state) {
+    if (!board.clientWidth) return;
+    const size = canvasBackingSize(state.width, state.height, board.clientWidth, window.devicePixelRatio);
+    if (canvas.width !== size.width) canvas.width = size.width;
+    if (canvas.height !== size.height) canvas.height = size.height;
+    renderGame(ctx, state, { cell: canvas.width / state.width });
   }
 
   function setStatus(element, text) {
@@ -80,7 +102,8 @@ function init() {
   let lastSoloLevel = 1;
 
   function renderSolo(state) {
-    renderGame(soloCtx, state, { cell: soloCanvas.width / state.width });
+    setArenaWidth($id('solo-board'), state.width);
+    drawBoard(soloCanvas, soloCtx, $id('solo-board'), state);
     setStatus($id('solo-score-value'), String(state.snakes[0].score));
     setStatus($id('solo-level-value'), String(state.level));
     setStatus($id('solo-speed-value'), `${state.tickMs} ms`);
@@ -109,8 +132,8 @@ function init() {
     if (solo) solo.stop();
     lastSoloLevel = 1;
     solo = new SoloController({ onState: renderSolo });
-    solo.start();
     show('solo');
+    solo.start();
   }
 
   // --- multiplayer --------------------------------------------------------
@@ -192,6 +215,7 @@ function init() {
 
   function renderMulti(state) {
     renderLobby(state);
+    setArenaWidth($id('multi-board'), state.game?.width ?? 24 * Math.max(1, state.players.length));
     if (state.phase === 'countdown' && state.countdownRemainingMs !== undefined) {
       lastMultiLevel = 1;
       setStatus($id('multi-level-value'), '1');
@@ -205,7 +229,7 @@ function init() {
     if (state.game) {
       $id('multi-board').hidden = false;
       multiCanvas.hidden = false;
-      renderGame(multiCtx, state.game, { cell: multiCanvas.width / state.game.width });
+      drawBoard(multiCanvas, multiCtx, $id('multi-board'), state.game);
       const level = state.game.level ?? 1;
       setStatus($id('multi-level-value'), String(level));
       setStatus($id('multi-speed-value'), `${state.game.tickMs ?? 150} ms`);
@@ -305,6 +329,14 @@ function init() {
     if (dir) {
       event.preventDefault();
       steer(dir);
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (screen === 'solo' && solo?.getState()) {
+      drawBoard(soloCanvas, soloCtx, $id('solo-board'), solo.getState());
+    } else if (screen === 'multi' && client?.getState()?.game) {
+      drawBoard(multiCanvas, multiCtx, $id('multi-board'), client.getState().game);
     }
   });
 

@@ -44,3 +44,22 @@ Refresh the arcade effects for food, snake heads, countdown, and level changes.
 Honor reduced-motion preference. Center the on-screen direction controls below
 the board as a touch-friendly, Game Boy-style cross-shaped D-pad on desktop and
 mobile, retaining accessible button labels.
+
+## 2026-09-13 approved board and food addition
+
+Default board dimensions scale with the player count: 24×16 for solo, 48×32
+for two players, 72×48 for three, and 96×64 for four. Explicit custom board
+dimensions remain available for tests. The LAN board size locks at match start
+and updates for the next rematch's roster. The frame grows on wide screens;
+on mobile the full board is scaled to fit, even when the four-player cells are
+small.
+
+Only one food exists at a time. Each placement selects a free cell and randomly
+chooses normal (80%), triple (10%), or shrink (10%). Normal food scores +1 and
+grows by one cell; triple scores +3 and grows by one cell; shrink scores +1 and
+shortens by one cell, never below two cells. Lv progression uses points earned,
+so triple food can cross a level threshold at once. Vacated tail cells are
+available to other snakes in the same tick; eliminated snakes do not score and
+their old bodies remain obstacles. The server selects and broadcasts the food
+type for LAN; clients render its distinct color and mark with an on-screen
+legend. A food object without a type is treated as normal.

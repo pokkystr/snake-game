@@ -35,7 +35,7 @@ Opening the page shows a mode choice.
 **Single player** runs entirely in the browser; it never contacts the
 multiplayer server. A visible 3-2-1 countdown starts each game and restart,
 with no movement before it ends. Steer with arrow keys or WASD, or the centered
-Game Boy-style d-pad on touch devices. Eat food to score and grow; hitting a
+Game Boy-style d-pad on touch devices. The board is 24×16 cells. Eat food to score; hitting a
 wall or a snake body ends the game. Restart returns to a fresh board without a
 page refresh.
 
@@ -50,12 +50,24 @@ draw. Disconnected players are removed from the lobby or eliminated from the
 match; host ownership transfers to the earliest connected member. After a
 result, the host can start a rematch with a reset game state.
 
+The LAN board scales with the roster at match start: 2 players use 48×32 cells,
+3 use 72×48, and 4 use 96×64. It does not resize mid-match after a disconnect;
+the next rematch uses the new roster size. On wide screens the board frame grows
+with the grid. On phones the entire board is scaled to fit the screen, so cells
+are very small in a four-player match.
+
 Keyboard (arrows/WASD) works after starting without needing mouse focus, and
 both modes include large touch d-pad controls that keep working on narrow
 viewports. The multi screen displays the LAN join URLs fetched from `/config`.
 QR codes are not generated; the URL is the supported join method.
 
-Both modes start at **Lv 1**, moving every **150 ms**. Every three foods eaten
+There is one food on the board at a time. Each new food is normal 80% of the
+time, triple 10%, or shrink 10%. Normal food grants +1 point and grows the
+snake by one cell. Triple food grants +3 points and grows it by one cell.
+Shrink food grants +1 point and shortens the snake by one cell, down to a
+minimum length of two. Their colors and marks are explained under the board.
+
+Both modes start at **Lv 1**, moving every **150 ms**. Every three points earned
 in the current game raises Lv and shortens the movement interval by 10 ms. The
 speed caps at 70 ms (Lv 9). In LAN matches, all players share the level: the
 server sums every snake's score and broadcasts the authoritative level and
@@ -78,7 +90,8 @@ trimmed, capped at 20 characters, never trusted as identity, and rendered as
 text only. Player identity, position, and score are server-issued; clients
 cannot set them. Only the host's start takes effect; repeated starts during
 countdown or play do nothing. The serialized `game` state includes `level` and
-`tickMs`.
+`tickMs`; `game.food` includes `x`, `y`, and `type` (`normal`, `triple`, or
+`shrink`). Clients only render that server-issued food type.
 
 ## Tests
 
@@ -104,6 +117,9 @@ npm test
   and custom tick intervals.
 - `test/solo-countdown.test.js` - deterministic three-second countdown, restart,
   and timer rescheduling after a level-up.
+- `test/scaled-board.test.js` - board sizing by roster and rematch resizing.
+- `test/special-food.test.js` - food odds, scoring, body length, simultaneous
+  collisions, and LAN food snapshots.
 
 ## Known limitations
 

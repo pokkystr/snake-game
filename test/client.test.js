@@ -5,10 +5,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { KEY_TO_DIRECTION, SoloController, keyToDirection } from '../public/single.js';
 import { MultiClient } from '../public/multi.js';
-import { nextScreen } from '../public/app.js';
+import * as app from '../public/app.js';
 import { renderGame } from '../public/render.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const { nextScreen } = app;
 
 class FakeTimer {
   constructor() {
@@ -152,6 +153,7 @@ test('renderGame draws food and every snake cell onto the canvas context', () =>
     clearRect: () => {},
     save: () => {},
     restore: () => {},
+    fillText: () => {},
   };
   const state = {
     width: 20,
@@ -167,6 +169,38 @@ test('renderGame draws food and every snake cell onto the canvas context', () =>
   assert.equal(calls.filter((c) => c.x === 40 && c.y === 40).length, 1, 'food drawn once');
   assert.ok(calls.some((c) => c.x === 10 && c.y === 10), 'live head drawn');
   assert.ok(calls.some((c) => c.x === 90 && c.y === 90), 'dead body still drawn as obstacle');
+});
+
+test('special foods render with distinct colors and effect marks', () => {
+  const draw = (type) => {
+    const cells = [];
+    const marks = [];
+    const ctx = {
+      fillStyle: '#000',
+      clearRect: () => {},
+      save: () => {},
+      restore: () => {},
+      fillRect(x, y, width, height) { cells.push({ x, y, width, height, color: this.fillStyle }); },
+      fillText(text) { marks.push(text); },
+    };
+    renderGame(ctx, { width: 24, height: 16, food: { x: 4, y: 4, type }, snakes: [] }, { cell: 20 });
+    return { color: cells.find((cell) => cell.x === 80 && cell.y === 80)?.color, marks };
+  };
+  const normal = draw('normal');
+  const triple = draw('triple');
+  const shrink = draw('shrink');
+  assert.notEqual(normal.color, triple.color);
+  assert.notEqual(normal.color, shrink.color);
+  assert.notEqual(triple.color, shrink.color);
+  assert.ok(triple.marks.includes('3'));
+  assert.ok(shrink.marks.includes('−'));
+});
+
+test('canvas backing pixels fit all 96×64 cells within a narrow screen', () => {
+  assert.equal(typeof app.canvasBackingSize, 'function');
+  const size = app.canvasBackingSize(96, 64, 320, 3);
+  assert.deepEqual(size, { width: 640, height: 427 });
+  assert.deepEqual(app.canvasBackingSize(48, 32, 960, 1), { width: 960, height: 640 });
 });
 
 function clientWithFakeSocket() {
