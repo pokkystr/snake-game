@@ -43,7 +43,7 @@ function foodType(value) {
 }
 
 export function isDirection(value) {
-  return Object.prototype.hasOwnProperty.call(DIRECTIONS, value);
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(DIRECTIONS, value);
 }
 
 export function validTurn(from, to) {

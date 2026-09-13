@@ -185,6 +185,38 @@ test('a fifth lobby member is rejected and closed', async () => {
   });
 });
 
+test('a JSON object join name is rejected and a fresh connection can still join', async () => {
+  await withServer(async (url) => {
+    const invalid = await Client.connect(`${url}/ws`);
+    invalid.send({ type: 'join', name: { toString: null } });
+    await invalid.waitForError('invalid_name');
+    assert.equal(await invalid.closed, 4003);
+
+    const valid = await Client.connect(`${url}/ws`);
+    valid.send({ type: 'join', name: 'Ana' });
+    await valid.waitFor((message) => message.type === 'welcome', 'welcome after invalid name');
+    assert.deepEqual((await valid.waitForState('lobby')).players.map((player) => player.name), ['Ana']);
+    valid.close();
+  });
+});
+
+test('a JSON object direction is rejected and the server keeps processing messages', async () => {
+  await withServer(async (url) => {
+    const a = await Client.connect(`${url}/ws`);
+    a.send({ type: 'join', name: 'Ana' });
+    await a.waitFor((message) => message.type === 'welcome', 'welcome A');
+    a.send({ type: 'direction', dir: { toString: null } });
+    await a.waitForError('invalid_direction');
+
+    const b = await Client.connect(`${url}/ws`);
+    b.send({ type: 'join', name: 'Bo' });
+    const state = await b.waitForState('lobby');
+    assert.deepEqual(state.players.map((player) => player.name), ['Ana', 'Bo']);
+    a.close();
+    b.close();
+  });
+});
+
 test('malformed JSON, unknown message types, and pre-join messages get bounded errors', async () => {
   await withServer(async (url) => {
     const a = await Client.connect(`${url}/ws`);

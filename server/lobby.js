@@ -17,7 +17,8 @@ export const CLOSE_CODES = {
 };
 
 function sanitizeName(rawName) {
-  const name = String(rawName ?? '').trim();
+  if (typeof rawName !== 'string') return null;
+  const name = rawName.trim();
   if (name === '') return null;
   const chars = [...name];
   return chars.slice(0, MAX_NAME_CODEPOINTS).join('');
@@ -157,6 +158,15 @@ export class Lobby {
           snake.id === playerId ? { ...snake, alive: false } : snake
         ),
       };
+      const survivors = this.game.snakes.filter((snake) => snake.alive).map((snake) => snake.id);
+      if (survivors.length <= 1) {
+        this.game = {
+          ...this.game,
+          phase: 'over',
+          result: { winnerIds: survivors, draw: survivors.length === 0 },
+        };
+        this.phase = 'result';
+      }
     }
     this.broadcastState();
   }

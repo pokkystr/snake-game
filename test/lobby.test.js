@@ -77,6 +77,18 @@ test('blank names are rejected with invalid_name and create no member', () => {
   assert.equal(latest('c2').players.length, 1);
 });
 
+test('non-string names are rejected without disrupting later joins', () => {
+  const { lobby, latest, errors } = harness();
+  for (const [index, name] of [null, 42, ['Ana'], { toString: null }].entries()) {
+    const connId = `bad-${index}`;
+    assert.deepEqual(lobby.join(connId, name, 1000 + index), { ok: false, code: 'invalid_name' });
+    assert.deepEqual(errors(connId).map((error) => error.code), ['invalid_name']);
+  }
+  assert.equal(lobby.players.size, 0);
+  assert.equal(lobby.join('good', 'Ana', 1005).ok, true);
+  assert.deepEqual(latest('good').players.map((player) => player.name), ['Ana']);
+});
+
 test('only the host can start, and starting enters a visible countdown with no ticks', () => {
   const { lobby, latest, errors } = harness();
   lobby.join('c1', 'Ana', 1000);
@@ -190,6 +202,20 @@ test('direction intents steer the snake; one change per tick; reversals rejected
   assert.equal(latest('c1').game.snakes.find((s) => s.id === 'p-c1').dir, 'south');
 });
 
+test('non-string direction is rejected without disrupting the match', () => {
+  const { lobby, latest, errors } = harness();
+  lobby.join('c1', 'Ana', 0);
+  lobby.join('c2', 'Bo', 0);
+  lobby.requestStart('p-c1', 0);
+  lobby.advance(3000);
+
+  lobby.setDirection('p-c1', { toString: null });
+  assert.equal(errors('c1').at(-1).code, 'invalid_direction');
+  lobby.setDirection('p-c1', 'south');
+  lobby.advance(3100);
+  assert.equal(latest('c1').game.snakes.find((snake) => snake.id === 'p-c1').dir, 'south');
+});
+
 test('disconnect during lobby removes the member and transfers the host', () => {
   const { lobby, latest } = harness();
   lobby.join('c1', 'Ana', 1000);
@@ -228,6 +254,49 @@ test('disconnect during play eliminates the snake and ends the match', () => {
   assert.equal(over.phase, 'result');
   assert.deepEqual(over.result.winnerIds, ['p-c1']);
   assert.deepEqual(latest('c1').players.map((p) => p.id), ['p-c1']);
+});
+
+test('disconnect awards the sole survivor before a due tick can turn the win into a draw', () => {
+  const { lobby, latest } = harness({ width: 12, height: 12 });
+  lobby.join('c1', 'Ana', 0);
+  lobby.join('c2', 'Bo', 0);
+  lobby.requestStart('p-c1', 0);
+  lobby.advance(3000);
+  const tickBefore = lobby.game.tick;
+  const survivor = lobby.game.snakes.find((snake) => snake.id === 'p-c1');
+  survivor.segments = [{ x: 11, y: 3 }, { x: 10, y: 3 }, { x: 9, y: 3 }];
+  survivor.dir = 'east';
+
+  lobby.leave('c2');
+  const result = latest('c1');
+  assert.equal(result.phase, 'result');
+  assert.equal(result.game.phase, 'over');
+  assert.equal(result.game.tick, tickBefore);
+  assert.deepEqual(result.result, { winnerIds: ['p-c1'], draw: false });
+  assert.deepEqual(result.game.result, result.result);
+  assert.equal(result.game.snakes.find((snake) => snake.id === 'p-c2').alive, false);
+
+  lobby.advance(3100);
+  assert.deepEqual(latest('c1').result, result.result);
+  assert.equal(latest('c1').game.tick, tickBefore);
+});
+
+test('play continues with multiple survivors, then transfers host and finalizes on another leave', () => {
+  const { lobby, latest } = harness();
+  lobby.join('c1', 'Ana', 0);
+  lobby.join('c2', 'Bo', 0);
+  lobby.join('c3', 'Cy', 0);
+  lobby.requestStart('p-c1', 0);
+  lobby.advance(3000);
+
+  lobby.leave('c1');
+  assert.equal(latest('c2').phase, 'playing');
+  assert.equal(latest('c2').hostId, 'p-c2');
+  assert.equal(latest('c2').game.snakes.filter((snake) => snake.alive).length, 2);
+
+  lobby.leave('c3');
+  assert.equal(latest('c2').phase, 'result');
+  assert.deepEqual(latest('c2').result, { winnerIds: ['p-c2'], draw: false });
 });
 
 test('match ends in result and a rematch resets game state', () => {
