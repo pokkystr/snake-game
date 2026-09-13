@@ -53,7 +53,7 @@ test('the app shell and client modules are served to browsers', async () => {
     assert.equal(home.status, 200);
     assert.match(home.type, /text\/html/);
     assert.match(home.body, /id="screen-select"/);
-    for (const file of ['app.js', 'single.js', 'multi.js', 'render.js', 'styles.css']) {
+    for (const file of ['app.js', 'single.js', 'multi.js', 'render.js', 'result-popup.js', 'styles.css']) {
       const response = await get(`${url}/${file}`);
       assert.equal(response.status, 200, `${file} served`);
     }
