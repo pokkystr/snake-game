@@ -20,6 +20,10 @@ export function boardDisplaySize(columns, rows, availableWidth, availableHeight)
   return { width, height: width * rows / columns };
 }
 
+export function needsViewportFit(width, height) {
+  return width <= 480 || (width <= 900 && height <= 480 && width > height);
+}
+
 const ERROR_TEXT = {
   not_host: 'Only the host can start the match.',
   not_enough_players: 'At least two players are needed to start.',
@@ -63,7 +67,8 @@ function init() {
     board.dataset.columns = columns;
     board.dataset.rows = rows;
     main.style.maxWidth = `${Math.max(720, naturalWidth + 48)}px`;
-    if (document.body.classList.contains('gameplay-active') && window.matchMedia('(max-width: 480px)').matches) {
+    if (document.body.classList.contains('gameplay-active') &&
+        needsViewportFit(window.innerWidth, window.innerHeight)) {
       const slot = board.parentElement;
       board.style.width = `${boardDisplaySize(columns, rows, slot.clientWidth, slot.clientHeight).width}px`;
     } else {

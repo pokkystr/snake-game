@@ -91,6 +91,15 @@ test('board display size preserves all grid ratios inside a constrained phone sl
   }
 });
 
+test('viewport fitting applies to short phone landscape as well as portrait', () => {
+  assert.equal(app.needsViewportFit(320, 667), true);
+  assert.equal(app.needsViewportFit(375, 812), true);
+  assert.equal(app.needsViewportFit(667, 320), true);
+  assert.equal(app.needsViewportFit(900, 480), true);
+  assert.equal(app.needsViewportFit(901, 480), false);
+  assert.equal(app.needsViewportFit(1024, 768), false);
+});
+
 test('mode routing: select leads to solo or multi, back returns to select, unknown is inert', () => {
   assert.equal(nextScreen('select', { type: 'choose-solo' }), 'solo');
   assert.equal(nextScreen('select', { type: 'choose-multi' }), 'multi');
