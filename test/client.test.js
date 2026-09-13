@@ -78,6 +78,19 @@ test('keyboard map covers arrows and WASD and ignores other keys', () => {
   assert.equal(keyToDirection('Space'), null);
 });
 
+test('board display size preserves all grid ratios inside a constrained phone slot', () => {
+  assert.deepEqual(app.boardDisplaySize(24, 16, 286, 300), { width: 286, height: 286 * 16 / 24 });
+  assert.deepEqual(app.boardDisplaySize(96, 64, 286, 150), { width: 225, height: 150 });
+  assert.deepEqual(app.boardDisplaySize(96, 64, 2000, 2000), { width: 1920, height: 1280 });
+  for (const players of [1, 2, 3, 4]) {
+    for (const [slotWidth, slotHeight] of [[286, 150], [341, 200]]) {
+      const size = app.boardDisplaySize(players * 24, players * 16, slotWidth, slotHeight);
+      assert.ok(size.width <= slotWidth && size.height <= slotHeight);
+      assert.ok(Math.abs(size.width / size.height - 1.5) < 0.001);
+    }
+  }
+});
+
 test('mode routing: select leads to solo or multi, back returns to select, unknown is inert', () => {
   assert.equal(nextScreen('select', { type: 'choose-solo' }), 'solo');
   assert.equal(nextScreen('select', { type: 'choose-multi' }), 'multi');

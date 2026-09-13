@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Snake Arena</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
@@ -32,9 +32,11 @@
           <p class="hud-level" id="solo-level">Lv <strong id="solo-level-value">1</strong></p>
           <p class="hud-speed">Speed <strong id="solo-speed-value">150 ms</strong></p>
         </div>
-        <div class="board-shell" id="solo-board">
-          <canvas id="solo-canvas" width="480" height="320" role="img" aria-label="Snake game board"></canvas>
-          <p id="solo-countdown" class="countdown-overlay" role="timer" hidden><span>Get ready</span><strong id="solo-countdown-value">3</strong></p>
+        <div class="board-slot">
+          <div class="board-shell" id="solo-board">
+            <canvas id="solo-canvas" width="480" height="320" role="img" aria-label="Snake game board"></canvas>
+            <p id="solo-countdown" class="countdown-overlay" role="timer" hidden><span>Get ready</span><strong id="solo-countdown-value">3</strong></p>
+          </div>
         </div>
         <ul class="food-legend" aria-label="Food effects">
           <li><span class="food-swatch normal" aria-hidden="true"></span> Normal: +1, grow 1</li>
@@ -72,9 +74,11 @@
           <p class="hud-level" id="multi-level">Lv <strong id="multi-level-value">1</strong></p>
           <p class="hud-speed">Speed <strong id="multi-speed-value">150 ms</strong></p>
         </div>
-        <div class="board-shell" id="multi-board" hidden>
-          <canvas id="multi-canvas" width="480" height="320" role="img" aria-label="Multiplayer snake board" hidden></canvas>
-          <p id="countdown" class="countdown-overlay" role="timer" hidden><span>Get ready</span><strong id="multi-countdown-value">3</strong></p>
+        <div class="board-slot">
+          <div class="board-shell" id="multi-board" hidden>
+            <canvas id="multi-canvas" width="480" height="320" role="img" aria-label="Multiplayer snake board" hidden></canvas>
+            <p id="countdown" class="countdown-overlay" role="timer" hidden><span>Get ready</span><strong id="multi-countdown-value">3</strong></p>
+          </div>
         </div>
         <ul class="food-legend" aria-label="Food effects">
           <li><span class="food-swatch normal" aria-hidden="true"></span> Normal: +1, grow 1</li>

@@ -15,6 +15,11 @@ export function canvasBackingSize(width, height, displayWidth, devicePixelRatio 
   return { width: pixelWidth, height: Math.round(pixelWidth * height / width) };
 }
 
+export function boardDisplaySize(columns, rows, availableWidth, availableHeight) {
+  const width = Math.max(1, Math.min(columns * 20, availableWidth, availableHeight * columns / rows));
+  return { width, height: width * rows / columns };
+}
+
 const ERROR_TEXT = {
   not_host: 'Only the host can start the match.',
   not_enough_players: 'At least two players are needed to start.',
@@ -47,13 +52,23 @@ function init() {
     for (const [key, element] of Object.entries(screens)) {
       element.hidden = key !== name;
     }
+    document.body.classList.toggle('gameplay-active', name === 'solo');
     if (name === 'select') main.style.maxWidth = '720px';
   }
 
-  function setArenaWidth(board, columns) {
+  function setArenaWidth(board, columns, rows) {
     const naturalWidth = columns * 20;
     board.style.maxWidth = `${naturalWidth}px`;
+    board.style.aspectRatio = `${columns} / ${rows}`;
+    board.dataset.columns = columns;
+    board.dataset.rows = rows;
     main.style.maxWidth = `${Math.max(720, naturalWidth + 48)}px`;
+    if (document.body.classList.contains('gameplay-active') && window.matchMedia('(max-width: 480px)').matches) {
+      const slot = board.parentElement;
+      board.style.width = `${boardDisplaySize(columns, rows, slot.clientWidth, slot.clientHeight).width}px`;
+    } else {
+      board.style.width = '100%';
+    }
   }
 
   function drawBoard(canvas, ctx, board, state) {
@@ -102,7 +117,7 @@ function init() {
   let lastSoloLevel = 1;
 
   function renderSolo(state) {
-    setArenaWidth($id('solo-board'), state.width);
+    setArenaWidth($id('solo-board'), state.width, state.height);
     drawBoard(soloCanvas, soloCtx, $id('solo-board'), state);
     setStatus($id('solo-score-value'), String(state.snakes[0].score));
     setStatus($id('solo-level-value'), String(state.level));
@@ -214,8 +229,11 @@ function init() {
   }
 
   function renderMulti(state) {
+    document.body.classList.toggle('gameplay-active', screen === 'multi' &&
+      (state.phase === 'countdown' || state.phase === 'playing'));
     renderLobby(state);
-    setArenaWidth($id('multi-board'), state.game?.width ?? 24 * Math.max(1, state.players.length));
+    const columns = state.game?.width ?? 24 * Math.max(1, state.players.length);
+    const rows = state.game?.height ?? 16 * Math.max(1, state.players.length);
     if (state.phase === 'countdown' && state.countdownRemainingMs !== undefined) {
       lastMultiLevel = 1;
       setStatus($id('multi-level-value'), '1');
@@ -229,6 +247,7 @@ function init() {
     if (state.game) {
       $id('multi-board').hidden = false;
       multiCanvas.hidden = false;
+      setArenaWidth($id('multi-board'), columns, rows);
       drawBoard(multiCanvas, multiCtx, $id('multi-board'), state.game);
       const level = state.game.level ?? 1;
       setStatus($id('multi-level-value'), String(level));
@@ -261,6 +280,7 @@ function init() {
       );
     } else if (state.phase === 'countdown') {
       multiCanvas.hidden = true;
+      setArenaWidth($id('multi-board'), columns, rows);
     }
   }
 
@@ -282,6 +302,7 @@ function init() {
       },
       onFatal: ({ reason }) => {
         stopCountdown();
+        document.body.classList.remove('gameplay-active');
         setStatus($id('multi-status'), FATAL_TEXT[reason] ?? FATAL_TEXT.disconnected);
         $id('multi-canvas').hidden = true;
         $id('multi-board').hidden = true;
@@ -334,11 +355,25 @@ function init() {
 
   window.addEventListener('resize', () => {
     if (screen === 'solo' && solo?.getState()) {
+      setArenaWidth($id('solo-board'), solo.getState().width, solo.getState().height);
       drawBoard(soloCanvas, soloCtx, $id('solo-board'), solo.getState());
     } else if (screen === 'multi' && client?.getState()?.game) {
+      const game = client.getState().game;
+      setArenaWidth($id('multi-board'), game.width, game.height);
       drawBoard(multiCanvas, multiCtx, $id('multi-board'), client.getState().game);
     }
   });
+
+  if (typeof ResizeObserver !== 'undefined') {
+    for (const board of [$id('solo-board'), $id('multi-board')]) {
+      new ResizeObserver(() => {
+        if (!board.dataset.columns || board.hidden) return;
+        setArenaWidth(board, Number(board.dataset.columns), Number(board.dataset.rows));
+        const state = board === $id('solo-board') ? solo?.getState() : client?.getState()?.game;
+        if (state) drawBoard(board.querySelector('canvas'), board.querySelector('canvas').getContext('2d'), board, state);
+      }).observe(board.parentElement);
+    }
+  }
 
   // --- shared screens -----------------------------------------------------
 
