@@ -50,10 +50,6 @@
           <button data-dir="east" class="east" aria-label="Move right">▶</button>
           <button data-dir="south" class="south" aria-label="Move down">▼</button>
         </div>
-        <div class="row">
-          <button id="solo-restart">Restart</button>
-          <button id="solo-back">Back to menu</button>
-        </div>
       </section>
 
       <section id="screen-multi" aria-labelledby="multi-title" hidden>
@@ -98,6 +94,24 @@
         </div>
       </section>
     </main>
+    <dialog id="result-dialog" class="result-dialog" aria-labelledby="result-title" aria-describedby="result-lead">
+      <div class="result-panel">
+        <p class="result-kicker">Snake Arena // Final score</p>
+        <h2 id="result-title" tabindex="-1">Game over</h2>
+        <p id="result-lead" class="result-lead"></p>
+        <ul id="result-stats" class="result-stats" aria-label="Match statistics"></ul>
+        <ul id="result-scores" class="result-scores" aria-label="Player scores"></ul>
+        <div id="result-solo-actions" class="result-actions" hidden>
+          <button id="solo-restart">Restart</button>
+          <button id="solo-back">Back to menu</button>
+        </div>
+        <div id="result-multi-actions" class="result-actions" hidden>
+          <p id="result-waiting" class="result-waiting" hidden></p>
+          <button id="result-rematch" hidden>Start rematch</button>
+          <button id="result-leave">Leave</button>
+        </div>
+      </div>
+    </dialog>
     <script type="module" src="/app.js"></script>
   </body>
 </html>

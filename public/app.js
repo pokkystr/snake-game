@@ -1,6 +1,7 @@
 import { SoloController, keyToDirection } from './single.js';
 import { MultiClient } from './multi.js';
 import { renderGame } from './render.js';
+import { ResultPopup } from './result-popup.js';
 
 export function nextScreen(current, action) {
   if (current === 'select' && action.type === 'choose-solo') return 'solo';
@@ -49,9 +50,22 @@ const $id = (id) => document.getElementById(id);
 function init() {
   const screens = { select: $id('screen-select'), solo: $id('screen-solo'), multi: $id('screen-multi') };
   const main = document.querySelector('main');
+  const resultPopup = new ResultPopup({
+    dialog: $id('result-dialog'),
+    title: $id('result-title'),
+    lead: $id('result-lead'),
+    stats: $id('result-stats'),
+    scores: $id('result-scores'),
+    soloActions: $id('result-solo-actions'),
+    multiActions: $id('result-multi-actions'),
+    rematch: $id('result-rematch'),
+    waiting: $id('result-waiting'),
+  }, (tag) => document.createElement(tag));
+  $id('result-dialog').addEventListener('cancel', (event) => event.preventDefault());
   let screen = 'select';
 
   function show(name) {
+    resultPopup.close();
     screen = name;
     for (const [key, element] of Object.entries(screens)) {
       element.hidden = key !== name;
@@ -146,6 +160,7 @@ function init() {
           ? 'Arrow keys / WASD or the on-screen pad to steer.'
           : 'Game over. Press Restart to play again.'
     );
+    resultPopup.syncSolo(state);
   }
 
   function startSolo() {
@@ -215,12 +230,7 @@ function init() {
       list.append(item);
     }
     const startButton = $id('btn-start');
-    const startable = state.phase === 'lobby' || state.phase === 'result';
-    startButton.hidden = !(startable && client && client.isHost());
-    setStatus(
-      startButton,
-      state.phase === 'result' ? 'Start rematch' : 'Start match'
-    );
+    startButton.hidden = !(state.phase === 'lobby' && client && client.isHost());
     startButton.disabled = state.players.length < 2;
     $id('join-form').hidden = state.phase !== 'lobby' || state.players.length >= 4;
   }
@@ -287,6 +297,7 @@ function init() {
       multiCanvas.hidden = true;
       setArenaWidth($id('multi-board'), columns, rows);
     }
+    resultPopup.syncMulti(state, Boolean(client?.isHost()));
   }
 
   function wsUrl() {
@@ -295,6 +306,7 @@ function init() {
   }
 
   function join(name) {
+    resultPopup.close();
     if (client) client.leave();
     client = new MultiClient({
       onWelcome: (welcome) => {
@@ -306,6 +318,7 @@ function init() {
         setStatus($id('multi-status'), ERROR_TEXT[message.code] ?? 'Error.');
       },
       onFatal: ({ reason }) => {
+        resultPopup.close();
         stopCountdown();
         document.body.classList.remove('gameplay-active');
         setStatus($id('multi-status'), FATAL_TEXT[reason] ?? FATAL_TEXT.disconnected);
@@ -335,6 +348,11 @@ function init() {
     if (client) client.start();
   });
 
+  $id('result-rematch').addEventListener('click', () => {
+    const state = client?.getState();
+    if (state?.phase === 'result' && client.isHost() && state.players.length >= 2) client.start();
+  });
+
   function steer(dir) {
     if (screen === 'solo' && solo) {
       solo.turn(dir);
@@ -351,6 +369,7 @@ function init() {
   }
 
   window.addEventListener('keydown', (event) => {
+    if ($id('result-dialog').open) return;
     const dir = keyToDirection(event.code);
     if (dir) {
       event.preventDefault();
@@ -392,21 +411,26 @@ function init() {
   });
   $id('solo-restart').addEventListener('click', (event) => {
     event.currentTarget.blur();
+    if (solo?.getState()?.phase !== 'over') return;
+    resultPopup.close();
     lastSoloLevel = 1;
     solo.restart();
   });
   $id('solo-back').addEventListener('click', (event) => {
     event.currentTarget.blur();
+    if (solo?.getState()?.phase !== 'over') return;
     if (solo) solo.stop();
     show('select');
   });
-  $id('multi-back').addEventListener('click', (event) => {
-    event.currentTarget.blur();
+  function leaveMulti() {
+    resultPopup.close();
     stopCountdown();
     if (client) client.leave();
     client = null;
     show('select');
-  });
+  }
+  $id('multi-back').addEventListener('click', leaveMulti);
+  $id('result-leave').addEventListener('click', leaveMulti);
 
   fetch('/config')
     .then((response) => response.json())

@@ -31,6 +31,7 @@ const PUBLIC_FILES = new Set([
   '/single.js',
   '/multi.js',
   '/render.js',
+  '/result-popup.js',
 ]);
 const SHARED_FILES = new Map([['/shared/game.js', path.join(ROOT, 'shared', 'game.js')]]);
 
