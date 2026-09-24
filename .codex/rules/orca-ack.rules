@@ -1,0 +1,14 @@
+prefix_rule(
+    pattern = ["orca", "orchestration", "check", "--ack"],
+    decision = "allow",
+    justification = "Acknowledge Orca coordination deliveries without repeated prompts.",
+    match = [
+        "orca orchestration check --ack delivery_343b3e179cad --json",
+        "orca orchestration check --ack delivery_future_id --json",
+    ],
+    not_match = [
+        "orca orchestration check --wait --json",
+        "orca orchestration send --run run_example --to worker --body message --json",
+        "orca worktree rm --worktree active --force --json",
+    ],
+)

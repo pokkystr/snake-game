@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Snake Arena</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Snake Arena</h1>
+
+      <section id="screen-select" aria-labelledby="select-title">
+        <h2 id="select-title">Choose a mode</h2>
+        <div class="menu">
+          <button id="btn-solo" class="mode">
+            Single player
+            <span class="hint">Play locally against the wall</span>
+          </button>
+          <button id="btn-multi" class="mode">
+            LAN multiplayer
+            <span class="hint">2-4 players on the same network</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="screen-solo" aria-labelledby="solo-title" hidden>
+        <h2 id="solo-title">Single player</h2>
+        <p class="status" id="solo-status" role="status">Arrow keys / WASD or the on-screen pad to steer.</p>
+        <div class="hud" aria-label="Single-player game stats">
+          <p class="hud-score">Score <strong id="solo-score-value">0</strong></p>
+          <p class="hud-level" id="solo-level">Lv <strong id="solo-level-value">1</strong></p>
+          <p class="hud-speed">Speed <strong id="solo-speed-value">150 ms</strong></p>
+        </div>
+        <div class="board-slot">
+          <div class="board-shell" id="solo-board">
+            <canvas id="solo-canvas" width="480" height="320" role="img" aria-label="Snake game board"></canvas>
+            <p id="solo-countdown" class="countdown-overlay" role="timer" hidden><span>Get ready</span><strong id="solo-countdown-value">3</strong></p>
+          </div>
+        </div>
+        <ul class="food-legend" aria-label="Food effects">
+          <li><span class="food-swatch normal" aria-hidden="true"></span> Normal: +1, grow 1</li>
+          <li><span class="food-swatch triple" aria-hidden="true">3</span> Triple: +3, grow 1</li>
+          <li><span class="food-swatch shrink" aria-hidden="true">−</span> Shrink: +1, lose 1 length (min 2)</li>
+        </ul>
+        <div class="dpad" role="group" aria-label="Direction controls">
+          <button data-dir="north" class="north" aria-label="Move up">▲</button>
+          <button data-dir="west" class="west" aria-label="Move left">◀</button>
+          <span class="dpad-center" aria-hidden="true"></span>
+          <button data-dir="east" class="east" aria-label="Move right">▶</button>
+          <button data-dir="south" class="south" aria-label="Move down">▼</button>
+        </div>
+      </section>
+
+      <section id="screen-multi" aria-labelledby="multi-title" hidden>
+        <h2 id="multi-title">LAN multiplayer</h2>
+        <p class="lan">
+          Open on any device on this network:
+          <code id="lan-url-text">loading…</code>
+        </p>
+        <form id="join-form">
+          <label for="player-name">Your name</label>
+          <input id="player-name" name="player-name" maxlength="20" autocomplete="off" placeholder="Player" />
+          <button type="submit">Join lobby</button>
+        </form>
+        <p class="status" id="multi-status" role="status"></p>
+        <ul id="lobby-list" aria-label="Players in the lobby"></ul>
+        <button id="btn-start" hidden>Start match</button>
+        <div class="hud" aria-label="Multiplayer game stats">
+          <p class="hud-level" id="multi-level">Lv <strong id="multi-level-value">1</strong></p>
+          <p class="hud-speed">Speed <strong id="multi-speed-value">150 ms</strong></p>
+        </div>
+        <div class="board-slot">
+          <div class="board-shell" id="multi-board" hidden>
+            <canvas id="multi-canvas" width="480" height="320" role="img" aria-label="Multiplayer snake board" hidden></canvas>
+            <p id="countdown" class="countdown-overlay" role="timer" hidden><span>Get ready</span><strong id="multi-countdown-value">3</strong></p>
+          </div>
+        </div>
+        <ul class="food-legend" aria-label="Food effects">
+          <li><span class="food-swatch normal" aria-hidden="true"></span> Normal: +1, grow 1</li>
+          <li><span class="food-swatch triple" aria-hidden="true">3</span> Triple: +3, grow 1</li>
+          <li><span class="food-swatch shrink" aria-hidden="true">−</span> Shrink: +1, lose 1 length (min 2)</li>
+        </ul>
+        <p class="score" id="multi-scores"></p>
+        <div class="dpad" role="group" aria-label="Direction controls">
+          <button data-dir="north" class="north" aria-label="Move up">▲</button>
+          <button data-dir="west" class="west" aria-label="Move left">◀</button>
+          <span class="dpad-center" aria-hidden="true"></span>
+          <button data-dir="east" class="east" aria-label="Move right">▶</button>
+          <button data-dir="south" class="south" aria-label="Move down">▼</button>
+        </div>
+        <div class="row">
+          <button id="multi-back">Leave</button>
+        </div>
+      </section>
+    </main>
+    <dialog id="result-dialog" class="result-dialog" aria-labelledby="result-title" aria-describedby="result-lead">
+      <div class="result-panel">
+        <p class="result-kicker">Snake Arena // Final score</p>
+        <h2 id="result-title" tabindex="-1">Game over</h2>
+        <p id="result-lead" class="result-lead"></p>
+        <ul id="result-stats" class="result-stats" aria-label="Match statistics"></ul>
+        <ul id="result-scores" class="result-scores" aria-label="Player scores"></ul>
+        <div id="result-solo-actions" class="result-actions" hidden>
+          <button id="solo-restart">Restart</button>
+          <button id="solo-back">Back to menu</button>
+        </div>
+        <div id="result-multi-actions" class="result-actions" hidden>
+          <p id="result-waiting" class="result-waiting" hidden></p>
+          <button id="result-rematch" hidden>Start rematch</button>
+          <button id="result-leave">Leave</button>
+        </div>
+      </div>
+    </dialog>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

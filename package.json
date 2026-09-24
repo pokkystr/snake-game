@@ -1,0 +1,17 @@
+{
+  "name": "snake-game-v2",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Single-player Snake and server-authoritative LAN multiplayer for 2-4 players.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ws": "^8.21.3"
+  }
+}
